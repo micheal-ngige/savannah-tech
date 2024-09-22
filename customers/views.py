@@ -1,6 +1,9 @@
-from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
+from rest_framework import viewsets
+from .models import Customer
+from .serializers import CustomerSerializer
+from rest_framework.permissions import IsAuthenticated
 
-@login_required
-def home(request):
-    return render(request, 'customers/home.html')
+class CustomerViewSet(viewsets.ModelViewSet):
+    queryset = Customer.objects.all()
+    serializer_class = CustomerSerializer
+    permission_classes = [IsAuthenticated]

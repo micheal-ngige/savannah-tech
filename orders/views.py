@@ -1,33 +1,28 @@
-from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required
+from django.conf import settings
+from rest_framework import viewsets
 from .models import Order
-from .forms import OrderForm
-from africastalking import SMS
+from .serializers import OrderSerializer
+from rest_framework.permissions import IsAuthenticated
+import africastalking  # Import the Africa's Talking SDK
 
-@login_required
-def order_list(request):
-    customer = request.user.customer
-    orders = Order.objects.filter(customer=customer)
-    return render(request, 'orders/order_list.html', {'orders': orders})
+# Initialize the Africa's Talking SDK
+username = settings.AFRICAS_TALKING_USERNAME  # Use 'sandbox' for testing
+api_key = settings.AFRICAS_TALKING_API_KEY
+africastalking.initialize(username, api_key)
 
-@login_required
-def order_create(request):
-    if request.method == 'POST':
-        form = OrderForm(request.POST)
-        if form.is_valid():
-            order = form.save(commit=False)
-            order.customer = request.user.customer
-            order.save()
+class OrderViewSet(viewsets.ModelViewSet):
+    queryset = Order.objects.all()
+    serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated]
 
-            # Send SMS
-            try:
-                phone_number = order.customer.phone
-                message = f"Order placed: {order.item} - {order.amount}"
-                SMS.send(message, [phone_number])
-            except Exception as e:
-                print(f"Error sending SMS: {e}")
+    def perform_create(self, serializer):
+        order = serializer.save(customer=self.request.user.customer)
+        self.send_sms(order.customer.phone, order.item, order.amount)
 
-            return redirect('order_list')
-    else:
-        form = OrderForm()
-    return render(request, 'orders/order_form.html', {'form': form})
+    def send_sms(self, phone, item, amount):
+        message = f"Thank you for your order of '{item}' amounting to ${amount}. We appreciate your business!"
+        try:
+            response = africastalking.SMS.send(message, [phone])
+            print("SMS sent successfully:", response)
+        except Exception as e:
+            print("Error sending SMS:", e)

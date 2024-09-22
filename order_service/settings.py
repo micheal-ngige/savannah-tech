@@ -18,6 +18,9 @@ load_dotenv()
 from decouple import config
 
 DEBUG = config('DEBUG', default=False, cast=bool)
+
+AFRICAS_TALKING_USERNAME = os.getenv('AFRICAS_TALKING_USERNAME')
+AFRICAS_TALKING_API_KEY = os.getenv('AFRICAS_TALKING_API_KEY')
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -137,11 +140,13 @@ AUTH_PASSWORD_VALIDATORS = [
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'oauth2_provider.contrib.rest_framework.OAuth2Authentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
 }
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
